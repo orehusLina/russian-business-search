@@ -118,7 +118,7 @@ def create_index(es: Elasticsearch, index_name: str):
                     "russian": {
                         "type": "custom",
                         "tokenizer": "standard",
-                        "filter": ["lowercase", "russian_stop", "russian_synonyms", "russian_stemmer"]
+                        "filter": ["lowercase", "russian_synonyms", "russian_stop", "russian_stemmer"]
                     }
                 },
                 "filter": {

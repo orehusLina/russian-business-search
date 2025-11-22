@@ -76,26 +76,40 @@ def fix_common_typos(word: str) -> str:
     return word
 
 
+def levenshtein_distance(s1: str, s2: str) -> int:
+    """Вычисляет расстояние Левенштейна между двумя строками"""
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+    if len(s2) == 0:
+        return len(s1)
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+    return previous_row[-1]
+
+
 def suggest_corrections(word: str, custom_words: set) -> list:
     word_lower = word.lower()
     suggestions = []
     
-    # Проверяем точные совпадения с разным регистром
     for known_word in custom_words:
-        if known_word.lower() == word_lower and known_word != word:
-            suggestions.append(known_word)
+        known_lower = known_word.lower()
+        if known_lower == word_lower:
+            continue
+        
+        distance = levenshtein_distance(word_lower, known_lower)
+        max_distance = 2 if len(word) <= 6 else 3
+        if distance <= max_distance:
+            suggestions.append((known_word, distance))
     
-    # Простой алгоритм: ищем слова с похожим началом
-    if len(word) >= 3:
-        prefix = word_lower[:3]
-        for known_word in custom_words:
-            known_lower = known_word.lower()
-            if known_lower.startswith(prefix) and known_lower != word_lower:
-                # Простая проверка расстояния Левенштейна (упрощенная)
-                if abs(len(known_lower) - len(word_lower)) <= 2:
-                    suggestions.append(known_word)
-    
-    return suggestions[:3]  # Возвращаем до 3 вариантов
+    suggestions.sort(key=lambda x: x[1])
+    return [word for word, _ in suggestions[:3]]
 
 
 def fix_query_typos(query: str) -> str:

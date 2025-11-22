@@ -13,10 +13,7 @@ import os
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError, NotFoundError
-from expand_query_with_synonyms import expand_query
-from spell_checker import fix_query_typos
-from spell_checker import fix_query_typos
-from expand_query_with_synonyms import expand_query
+from query_enhancer import analyze_query, build_search_query
 
 app = FastAPI(title="RB.RU Search API", version="1.0.0")
 
@@ -129,41 +126,48 @@ async def search(request: SearchRequest):
             }
         }
         
-        # Основной поисковый запрос
-        # КРИТИЧЕСКИ ВАЖНО: multi_match автоматически использует analyzer полей
-        # Это обеспечивает согласованность предобработки запросов и индексации
-        # Запрос проходит через тот же "russian" analyzer (lowercase, стоп-слова, стемминг)
         if request.query:
-            fixed_query = fix_query_typos(request.query)
-            expanded_query = expand_query(fixed_query)
-            query_body["query"]["bool"]["must"].append({
-                "multi_match": {
-                    "query": expanded_query,
-                    "fields": ["title^3", "text^2", "description^1.5", "companies^2", "people^1.5"],
-                    "type": "best_fields",
-                    "fuzziness": "AUTO"
-                }
-            })
+            analysis = analyze_query(request.query)
+            optimized_query = build_search_query(request.query, analysis)
+            
+            # Добавляем фильтры к оптимизированному запросу
+            if "bool" in optimized_query:
+                if "filter" not in optimized_query["bool"]:
+                    optimized_query["bool"]["filter"] = []
+                
+                if request.content_type:
+                    optimized_query["bool"]["filter"].append({
+                        "term": {"content_type": request.content_type}
+                    })
+                
+                if request.company:
+                    optimized_query["bool"]["filter"].append({
+                        "term": {"companies.keyword": request.company}
+                    })
+                
+                if request.tag:
+                    optimized_query["bool"]["filter"].append({
+                        "term": {"tags.keyword": request.tag}
+                    })
+            
+            query_body["query"] = optimized_query
         else:
             query_body["query"]["bool"]["must"].append({"match_all": {}})
-        
-        # Фильтры (используем .keyword поля для точного совпадения)
-        if request.content_type:
-            query_body["query"]["bool"]["filter"].append({
-                "term": {"content_type": request.content_type}
-            })
-        
-        if request.company:
-            # Используем .keyword для точного совпадения компании
-            query_body["query"]["bool"]["filter"].append({
-                "term": {"companies.keyword": request.company}
-            })
-        
-        if request.tag:
-            # Используем .keyword для точного совпадения тега
-            query_body["query"]["bool"]["filter"].append({
-                "term": {"tags.keyword": request.tag}
-            })
+            
+            if request.content_type:
+                query_body["query"]["bool"]["filter"].append({
+                    "term": {"content_type": request.content_type}
+                })
+            
+            if request.company:
+                query_body["query"]["bool"]["filter"].append({
+                    "term": {"companies.keyword": request.company}
+                })
+            
+            if request.tag:
+                query_body["query"]["bool"]["filter"].append({
+                    "term": {"tags.keyword": request.tag}
+                })
         
         response = es.search(index=ES_INDEX, body=query_body)
         
