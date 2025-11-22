@@ -50,11 +50,7 @@ try:
     else:
         es = Elasticsearch([{"host": ES_HOST, "port": ES_PORT, "scheme": "http"}], request_timeout=60)
     
-    print(f"Elasticsearch клиент создан (http://{ES_HOST}:{ES_PORT})")
 except Exception as e:
-    print(f"Ошибка создания клиента Elasticsearch: {e}")
-    import traceback
-    traceback.print_exc()
     es = None
 
 
@@ -163,14 +159,7 @@ async def search(request: SearchRequest):
                 "term": {"tags.keyword": request.tag}
             })
         
-        # Выполняем поиск
-        try:
-            response = es.search(index=ES_INDEX, body=query_body)
-        except Exception as search_error:
-            print(f"Ошибка при выполнении поиска: {search_error}")
-            import traceback
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Ошибка поиска в Elasticsearch: {str(search_error)}")
+        response = es.search(index=ES_INDEX, body=query_body)
         
         # Форматируем результаты
         results = []
@@ -201,12 +190,7 @@ async def search(request: SearchRequest):
     
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Индекс не найден. Запустите индексацию данных.")
-    except HTTPException:
-        raise
     except Exception as e:
-        print(f"Неожиданная ошибка поиска: {e}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Ошибка поиска: {str(e)}")
 
 

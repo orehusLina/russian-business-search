@@ -174,15 +174,12 @@ def index_articles(es: Elasticsearch, index_name: str, data_file: Path):
         body={"refresh_interval": "1s"}
     )
     es.indices.refresh(index=index_name)
-    
-    print(f"Индексировано: {success_count}/{len(articles)}")
 
 
 def main():
     es = Elasticsearch([{"host": ES_HOST, "port": ES_PORT, "scheme": "http"}], request_timeout=60)
     
     if not DATA_FILE.exists():
-        print(f"Ошибка: файл {DATA_FILE} не найден")
         return
     
     create_index(es, ES_INDEX)
