@@ -13,6 +13,8 @@ import os
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError, NotFoundError
+from expand_query_with_synonyms import expand_query
+from expand_query_with_synonyms import expand_query
 
 app = FastAPI(title="RB.RU Search API", version="1.0.0")
 
@@ -130,12 +132,13 @@ async def search(request: SearchRequest):
         # Это обеспечивает согласованность предобработки запросов и индексации
         # Запрос проходит через тот же "russian" analyzer (lowercase, стоп-слова, стемминг)
         if request.query:
+            expanded_query = expand_query(request.query)
             query_body["query"]["bool"]["must"].append({
                 "multi_match": {
-                    "query": request.query,
+                    "query": expanded_query,
                     "fields": ["title^3", "text^2", "description^1.5", "companies^2", "people^1.5"],
                     "type": "best_fields",
-                    "fuzziness": "AUTO"  # Дополнительная защита от опечаток
+                    "fuzziness": "AUTO"
                 }
             })
         else:

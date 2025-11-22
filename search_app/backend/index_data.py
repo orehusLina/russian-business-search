@@ -9,6 +9,7 @@ from typing import Dict, Any
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
 from tqdm import tqdm
+from load_synonyms_for_index import get_synonyms_list
 
 ES_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ES_PORT = int(os.getenv("ELASTICSEARCH_PORT", "9200"))
@@ -117,13 +118,17 @@ def create_index(es: Elasticsearch, index_name: str):
                     "russian": {
                         "type": "custom",
                         "tokenizer": "standard",
-                        "filter": ["lowercase", "russian_stop", "russian_stemmer"]
+                        "filter": ["lowercase", "russian_stop", "russian_synonyms", "russian_stemmer"]
                     }
                 },
                 "filter": {
                     "russian_stop": {
                         "type": "stop",
                         "stopwords": "_russian_"
+                    },
+                    "russian_synonyms": {
+                        "type": "synonym",
+                        "synonyms": get_synonyms_list()
                     },
                     "russian_stemmer": {
                         "type": "stemmer",
