@@ -1,0 +1,33 @@
+# Результаты скрапинга
+*.json
+*.csv
+!requirements.txt
+
+# Логи
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Тестовые файлы
+test_page.html
+test_articles.json
+test_articles.csv
+
