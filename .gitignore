@@ -1,6 +1,4 @@
 # Результаты скрапинга
-*.json
-*.csv
 !requirements.txt
 
 # Логи
