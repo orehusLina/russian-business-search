@@ -14,6 +14,8 @@ import os
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError, NotFoundError
 from expand_query_with_synonyms import expand_query
+from spell_checker import fix_query_typos
+from spell_checker import fix_query_typos
 from expand_query_with_synonyms import expand_query
 
 app = FastAPI(title="RB.RU Search API", version="1.0.0")
@@ -132,7 +134,8 @@ async def search(request: SearchRequest):
         # Это обеспечивает согласованность предобработки запросов и индексации
         # Запрос проходит через тот же "russian" analyzer (lowercase, стоп-слова, стемминг)
         if request.query:
-            expanded_query = expand_query(request.query)
+            fixed_query = fix_query_typos(request.query)
+            expanded_query = expand_query(fixed_query)
             query_body["query"]["bool"]["must"].append({
                 "multi_match": {
                     "query": expanded_query,
