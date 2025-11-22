@@ -1,10 +1,8 @@
-"""Загрузка синонимов из файла"""
 from pathlib import Path
 
 SYNONYMS_FILE = Path(__file__).parent / "synonyms.txt"
 
 def load_synonyms():
-    """Загружает синонимы из файла и возвращает словарь"""
     synonyms_dict = {}
     
     with open(SYNONYMS_FILE, 'r', encoding='utf-8') as f:

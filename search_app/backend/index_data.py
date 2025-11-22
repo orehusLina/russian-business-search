@@ -1,5 +1,3 @@
-"""Скрипт для индексации данных в Elasticsearch"""
-
 import json
 import os
 import time

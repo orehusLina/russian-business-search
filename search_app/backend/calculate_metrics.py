@@ -1,21 +1,14 @@
-"""
-Скрипт для расчета метрик качества поиска
-"""
-
 import csv
-import json
 import math
 from pathlib import Path
 from typing import List, Dict, Tuple
 from collections import defaultdict
 
-CSV_FILE = Path(__file__).parent / "serp_results_marked.csv"  # Используем размеченный файл
-JSON_FILE = Path(__file__).parent / "serp_results.json"
+CSV_FILE = Path(__file__).parent / "serp_results_marked.csv"
 OUTPUT_CSV = Path(__file__).parent / "search_metrics.csv"
 
 
 def calculate_precision_at_k(relevances: List[int], k: int) -> float:
-    """Вычисляет Precision@k"""
     if len(relevances) < k:
         k = len(relevances)
     if k == 0:
@@ -25,7 +18,6 @@ def calculate_precision_at_k(relevances: List[int], k: int) -> float:
 
 
 def calculate_average_precision(relevances: List[int]) -> float:
-    """Вычисляет Average Precision"""
     if not relevances:
         return 0.0
     
@@ -42,7 +34,6 @@ def calculate_average_precision(relevances: List[int]) -> float:
 
 
 def calculate_dcg(relevances: List[int], k: int) -> float:
-    """Вычисляет DCG@k"""
     if len(relevances) < k:
         k = len(relevances)
     dcg = 0.0
@@ -50,15 +41,12 @@ def calculate_dcg(relevances: List[int], k: int) -> float:
         if i < len(relevances):
             relevance = relevances[i]
             if relevance > 0:
-                dcg += relevance / math.log2(i + 2)  # i+2 потому что log2(1) = 0
+                dcg += relevance / math.log2(i + 2)
     return dcg
 
 
 def calculate_ndcg_at_k(relevances: List[int], k: int) -> float:
-    """Вычисляет NDCG@k"""
     dcg = calculate_dcg(relevances, k)
-    
-    # Идеальный DCG: сортируем релевантности по убыванию
     ideal_relevances = sorted(relevances, reverse=True)
     idcg = calculate_dcg(ideal_relevances, k)
     
@@ -69,18 +57,15 @@ def calculate_ndcg_at_k(relevances: List[int], k: int) -> float:
 
 
 def load_data_from_csv() -> Dict[str, List[Tuple[int, int]]]:
-    """Загружает данные из CSV и группирует по запросам"""
     query_results = defaultdict(list)
     
     with open(CSV_FILE, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             query = row['Запрос']
-            # Используем релевантность 0/1 для бинарных метрик
             relevance_0_1 = row.get('Релевантность (0/1)', '').strip()
             relevance_1_3 = row.get('Релевантность (1-3)', '').strip()
             
-            # Для метрик используем 0/1 для бинарности, но для NDCG используем 1-3
             rel_binary = 1 if relevance_0_1 == '1' else 0
             rel_graded = int(relevance_1_3) if relevance_1_3 and relevance_1_3.isdigit() else 0
             
@@ -90,13 +75,9 @@ def load_data_from_csv() -> Dict[str, List[Tuple[int, int]]]:
 
 
 def calculate_metrics_for_query(relevances_binary: List[int], relevances_graded: List[int]) -> Dict[str, float]:
-    """Вычисляет все метрики для одного запроса"""
-    # Для Precision и Average Precision используем бинарную релевантность
     precision_5 = calculate_precision_at_k(relevances_binary, 5)
     precision_10 = calculate_precision_at_k(relevances_binary, 10)
     avg_precision = calculate_average_precision(relevances_binary)
-    
-    # Для NDCG используем градированную релевантность (1-3)
     ndcg_5 = calculate_ndcg_at_k(relevances_graded, 5)
     
     return {
@@ -108,10 +89,7 @@ def calculate_metrics_for_query(relevances_binary: List[int], relevances_graded:
 
 
 def main():
-    # Загружаем данные
     query_results = load_data_from_csv()
-    
-    # Вычисляем метрики для каждого запроса
     metrics_data = []
     
     for query in sorted(query_results.keys()):
@@ -125,7 +103,6 @@ def main():
             **metrics
         })
     
-    # Выводим таблицу в консоль
     print("\n" + "="*120)
     print(f"{'':<4} {'Запрос':<50} {'Precision@5':<15} {'Precision@10':<15} {'Average Precision':<20} {'NDCG@5':<15}")
     print("="*120)
@@ -138,7 +115,6 @@ def main():
         ndcg = f"{data['NDCG@5']:.6f}"
         print(f"{i:<4} {query:<50} {p5:<15} {p10:<15} {ap:<20} {ndcg:<15}")
     
-    # Вычисляем средние значения
     mean_ap = sum(m['Average Precision'] for m in metrics_data) / len(metrics_data) if metrics_data else 0.0
     mean_ndcg = sum(m['NDCG@5'] for m in metrics_data) / len(metrics_data) if metrics_data else 0.0
     
@@ -147,7 +123,6 @@ def main():
     print(f"Mean NDCG@5 по всем запросам: {mean_ndcg:.3f}")
     print("="*110 + "\n")
     
-    # Сохраняем в CSV
     with open(OUTPUT_CSV, 'w', encoding='utf-8', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=['Запрос', 'Precision@5', 'Precision@10', 'Average Precision', 'NDCG@5'])
         writer.writeheader()

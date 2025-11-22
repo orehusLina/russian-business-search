@@ -1,10 +1,8 @@
-"""Модуль для улучшения поисковых запросов"""
 import re
 from typing import Dict, List, Tuple
 
 
 def analyze_query(query: str) -> Dict:
-    """Анализирует запрос и определяет стратегию поиска"""
     words = query.split()
     query_lower = query.lower()
     
@@ -20,7 +18,6 @@ def analyze_query(query: str) -> Dict:
 
 
 def determine_fuzziness(query: str, analysis: Dict) -> str:
-    """Определяет уровень fuzziness на основе анализа запроса"""
     if analysis["is_single_word"]:
         if len(query) > 5:
             return "AUTO"
@@ -33,14 +30,10 @@ def determine_fuzziness(query: str, analysis: Dict) -> str:
 
 
 def build_search_query(query: str, analysis: Dict) -> Dict:
-    """Строит оптимизированный поисковый запрос"""
     fuzziness = determine_fuzziness(query, analysis)
-    
-    # Основной запрос
     must_queries = []
     should_queries = []
     
-    # Точное совпадение (высокий приоритет)
     must_queries.append({
         "multi_match": {
             "query": query,
@@ -49,7 +42,6 @@ def build_search_query(query: str, analysis: Dict) -> Dict:
         }
     })
     
-    # Fuzzy поиск только для длинных слов
     if analysis["word_count"] > 0:
         words = query.split()
         fuzzy_terms = [w for w in words if len(w) > 3]
@@ -65,7 +57,6 @@ def build_search_query(query: str, analysis: Dict) -> Dict:
                 }
             })
     
-    # Match phrase для точных фраз
     if analysis["word_count"] >= 2:
         should_queries.append({
             "match_phrase": {

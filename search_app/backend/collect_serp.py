@@ -1,8 +1,3 @@
-"""
-Скрипт для сбора SERP (Search Engine Result Page) результатов
-для оценки качества поисковой системы
-"""
-
 import json
 import csv
 import os
@@ -11,7 +6,6 @@ from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
 
-# Настройки API
 API_URL = os.getenv("SEARCH_API_URL", "http://localhost:8000")
 QUERIES_FILE = Path(__file__).parent / "search_queries.txt"
 OUTPUT_JSON_FILE = Path(__file__).parent / "serp_results.json"
@@ -19,19 +13,16 @@ OUTPUT_CSV_FILE = Path(__file__).parent / "serp_results.csv"
 
 
 def parse_queries_file(file_path: Path) -> List[str]:
-    """Парсит файл с запросами, извлекая только строки запросов (не комментарии)"""
     queries = []
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
-            # Пропускаем пустые строки и комментарии
             if line and not line.startswith('#'):
                 queries.append(line)
     return queries
 
 
 def search_query(query: str, size: int = 20) -> Dict[str, Any]:
-    """Выполняет поисковый запрос через API"""
     try:
         response = requests.post(
             f"{API_URL}/search",
@@ -46,7 +37,6 @@ def search_query(query: str, size: int = 20) -> Dict[str, Any]:
 
 
 def format_serp_result(query: str, search_response: Dict[str, Any]) -> Dict[str, Any]:
-    """Форматирует результат поиска в формат SERP"""
     serp = {
         "query": query,
         "timestamp": datetime.now().isoformat(),
@@ -67,8 +57,8 @@ def format_serp_result(query: str, search_response: Dict[str, Any]) -> Dict[str,
             "companies": article.get("companies", []),
             "people": article.get("people", []),
             "tags": article.get("tags", []),
-            "relevance_1_3": None,  # Для разметки: 1-3 (1 - слабо релевантно, 2 - релевантно, 3 - полностью релевантно)
-            "relevance_0_1": None   # Для разметки: 0/1 (0 - нерелевантно, 1 - релевантно)
+            "relevance_1_3": None,
+            "relevance_0_1": None
         }
         serp["results"].append(result)
     
@@ -76,7 +66,6 @@ def format_serp_result(query: str, search_response: Dict[str, Any]) -> Dict[str,
 
 
 def collect_serp(queries: List[str]) -> List[Dict[str, Any]]:
-    """Собирает SERP результаты для всех запросов"""
     all_serp = []
     
     print(f"Начинаю сбор SERP для {len(queries)} запросов...")
@@ -118,14 +107,11 @@ def main():
         "serp_results": all_serp
     }
     
-    # Сохраняем в JSON
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
     
-    # Сохраняем в CSV для удобства разметки
     with open(OUTPUT_CSV_FILE, 'w', encoding='utf-8', newline='') as f:
         writer = csv.writer(f)
-        # Заголовки
         writer.writerow([
             "Запрос",
             "Ранг",
@@ -135,7 +121,6 @@ def main():
             "Релевантность (0/1)"
         ])
         
-        # Данные
         for serp in all_serp:
             for result in serp["results"]:
                 writer.writerow([
@@ -152,9 +137,6 @@ def main():
     print(f"  CSV:  {OUTPUT_CSV_FILE}")
     print(f"  Всего запросов: {len(queries)}")
     print(f"  Всего результатов: {sum(len(s['results']) for s in all_serp)}")
-    print("\nСледующий шаг: разметьте результаты по релевантности в файле serp_results.csv")
-    print("  Релевантность (1-3): 1 - слабо релевантно, 2 - релевантно, 3 - полностью релевантно")
-    print("  Релевантность (0/1): 0 - нерелевантно, 1 - релевантно")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,3 @@
-"""
-Скрипт для извлечения размеченных запросов в отдельный файл
-"""
-
 import csv
 from pathlib import Path
 from collections import defaultdict
@@ -11,11 +7,9 @@ OUTPUT_FILE = Path(__file__).parent / "serp_results_marked.csv"
 
 
 def extract_marked_queries():
-    """Извлекает только размеченные запросы в отдельный файл"""
     query_results = defaultdict(list)
     marked_queries = set()
     
-    # Читаем исходный файл
     with open(CSV_FILE, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -23,12 +17,10 @@ def extract_marked_queries():
             relevance_0_1 = row.get('Релевантность (0/1)', '').strip()
             relevance_1_3 = row.get('Релевантность (1-3)', '').strip()
             
-            # Проверяем, размечен ли запрос
             if relevance_0_1 or relevance_1_3:
                 marked_queries.add(query)
                 query_results[query].append(row)
     
-    # Записываем только размеченные запросы
     if not marked_queries:
         print("Нет размеченных запросов!")
         return

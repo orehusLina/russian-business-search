@@ -1,19 +1,9 @@
-"""Модуль для расширения запросов синонимами"""
 from load_synonyms import load_synonyms
 
 SYNONYMS = load_synonyms()
 
 
 def expand_query(query: str) -> str:
-    """
-    Расширяет поисковый запрос синонимами
-    
-    Args:
-        query: Исходный запрос
-        
-    Returns:
-        Расширенный запрос с синонимами
-    """
     words = query.lower().split()
     expanded_words = []
     

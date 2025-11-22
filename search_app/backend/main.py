@@ -1,8 +1,3 @@
-"""
-FastAPI бэкенд для поискового приложения
-Подключается к Elasticsearch и предоставляет REST API для поиска
-"""
-
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -17,16 +12,14 @@ from query_enhancer import analyze_query, build_search_query
 
 app = FastAPI(title="RB.RU Search API", version="1.0.0")
 
-# CORS для Flutter Web
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшене указать конкретные домены
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Подключение к Elasticsearch
 ES_HOST = os.getenv("ELASTICSEARCH_HOST", "localhost")
 ES_PORT = int(os.getenv("ELASTICSEARCH_PORT", "9200"))
 ES_USE_SSL = os.getenv("ELASTICSEARCH_USE_SSL", "false").lower() == "true"
