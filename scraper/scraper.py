@@ -16,16 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class RBScraper:
-    """Скрапер для сайта rb.ru"""
-    
     def __init__(self, max_workers: int = DEFAULT_MAX_WORKERS, delay: float = DEFAULT_DELAY):
-        """
-        Инициализация скрапера
-        
-        Args:
-            max_workers: Количество потоков для параллельного скрапинга
-            delay: Задержка между запросами (секунды)
-        """
         self.http_client = HTTPClient(delay=delay)
         self.parser = HTMLParser()
         self.storage = DataStorage()
@@ -34,16 +25,6 @@ class RBScraper:
         self.articles = []
     
     def get_article_urls_from_listing(self, section: str, max_pages: int = 50) -> List[str]:
-        """
-        Получение URL статей из списка статей раздела
-        
-        Args:
-            section: Название раздела
-            max_pages: Максимальное количество страниц для скрапинга
-            
-        Returns:
-            Список URL статей
-        """
         urls = []
         section_path = SECTIONS.get(section, '/')
         
@@ -87,15 +68,6 @@ class RBScraper:
         return list(set(urls))
     
     def parse_article_page(self, url: str) -> Dict:
-        """
-        Парсинг страницы статьи
-        
-        Args:
-            url: URL статьи
-            
-        Returns:
-            Словарь с данными статьи или None
-        """
         if url in self.scraped_urls:
             return None
         
@@ -108,30 +80,17 @@ class RBScraper:
     
     def scrape_section(self, section: str, max_pages: int = 50, save_milestone: bool = False,
                        milestone_interval: int = None, total_before_section: int = 0) -> List[Dict]:
-        """
-        Скрапинг раздела сайта
-        
-        Args:
-            section: Название раздела
-            max_pages: Максимальное количество страниц
-            save_milestone: Сохранять ли промежуточные результаты после раздела
-            milestone_interval: Сохранять каждые N статей (если задан)
-            total_before_section: Количество статей до начала этого раздела
-            
-        Returns:
-            Список статей
-        """
         logger.info(f"Начинаю скрапинг раздела: {section}")
         logger.info(f"[MILESTONE DEBUG] Параметры функции: milestone_interval={milestone_interval} (type: {type(milestone_interval)}), total_before_section={total_before_section}")
         urls = self.get_article_urls_from_listing(section, max_pages)
         logger.info(f"Найдено {len(urls)} URL для скрапинга в разделе {section}")
         if milestone_interval:
-            logger.info(f"[MILESTONE] ✓ Milestone сохранение включено: каждые {milestone_interval} статей (уже собрано: {total_before_section})")
+            logger.info(f"[MILESTONE] Milestone сохранение включено: каждые {milestone_interval} статей (уже собрано: {total_before_section})")
         else:
-            logger.warning(f"[MILESTONE] ✗ Milestone сохранение ОТКЛЮЧЕНО! milestone_interval={milestone_interval}")
+            logger.warning(f"[MILESTONE] Milestone сохранение ОТКЛЮЧЕНО! milestone_interval={milestone_interval}")
         
         articles = []
-        last_saved_count = 0  # Последнее количество сохраненных статей
+        last_saved_count = 0
         
         logger.info(f"[MILESTONE] Начало скрапинга раздела {section}: milestone_interval={milestone_interval}, total_before_section={total_before_section}")
         
@@ -147,15 +106,15 @@ class RBScraper:
                             articles.append(article)
                             pbar.update(1)
                             
-                            # ПРОСТАЯ ПРОВЕРКА: каждые N статей
+                            # каждые N статей
                             if milestone_interval and milestone_interval > 0:
                                 total_articles = total_before_section + len(articles)
                                 
-                                # Логируем каждые 10 статей для отладки
+                                # логируем каждые 10 статей для отладки
                                 if len(articles) % 10 == 0:
                                     logger.info(f"[PROGRESS] Статей в разделе: {len(articles)}, всего: {total_articles}, last_saved: {last_saved_count}")
                                 
-                                # УПРОЩЕННАЯ ПРОВЕРКА: просто проверяем разницу
+                                # просто проверяем разницу
                                 if total_articles >= milestone_interval:
                                     # Вычисляем сколько статей прошло с последнего сохранения
                                     articles_since_last_save = total_articles - last_saved_count
@@ -166,7 +125,7 @@ class RBScraper:
                                     
                                     # Сохраняем если прошло >= milestone_interval статей с последнего сохранения
                                     if articles_since_last_save >= milestone_interval:
-                                        logger.info(f"[MILESTONE] 🔥 СОХРАНЯЮ: {total_articles} статей (было сохранено: {last_saved_count}, разница: {articles_since_last_save})")
+                                        logger.info(f"[MILESTONE] СОХРАНЯЮ: {total_articles} статей (было сохранено: {last_saved_count}, разница: {articles_since_last_save})")
                                         
                                         # Сохраняем все накопленные статьи
                                         temp_articles = list(self.articles) + articles
@@ -181,9 +140,9 @@ class RBScraper:
                                             logger.info(f"[MILESTONE] JSON сохранен!")
                                             self.save_to_csv('rb_articles_milestone.csv')
                                             logger.info(f"[MILESTONE] CSV сохранен!")
-                                            logger.info(f"[MILESTONE] ✅✅✅ УСПЕШНО СОХРАНЕНО {len(temp_articles)} СТАТЕЙ! ✅✅✅")
+                                            logger.info(f"[MILESTONE] УСПЕШНО СОХРАНЕНО {len(temp_articles)} СТАТЕЙ!")
                                         except Exception as e:
-                                            logger.error(f"[MILESTONE] ❌ ОШИБКА: {e}", exc_info=True)
+                                            logger.error(f"[MILESTONE] ОШИБКА: {e}", exc_info=True)
                                         finally:
                                             self.articles = original_articles
                                         
@@ -200,16 +159,16 @@ class RBScraper:
                 if total_articles >= milestone_interval:
                     articles_since_last_save = total_articles - last_saved_count
                     if articles_since_last_save >= milestone_interval:
-                        logger.info(f"[MILESTONE FINAL] 🔥 ФИНАЛЬНОЕ СОХРАНЕНИЕ: {total_articles} статей (разница: {articles_since_last_save})")
+                        logger.info(f"[MILESTONE FINAL] ФИНАЛЬНОЕ СОХРАНЕНИЕ: {total_articles} статей (разница: {articles_since_last_save})")
                         temp_articles = list(self.articles) + articles
                         original_articles = self.articles
                         self.articles = temp_articles
                         try:
                             self.save_to_json('rb_articles_milestone.json')
                             self.save_to_csv('rb_articles_milestone.csv')
-                            logger.info(f"[MILESTONE FINAL] ✅ Сохранено {len(temp_articles)} статей")
+                            logger.info(f"[MILESTONE FINAL] Сохранено {len(temp_articles)} статей")
                         except Exception as e:
-                            logger.error(f"[MILESTONE FINAL] ❌ ОШИБКА: {e}", exc_info=True)
+                            logger.error(f"[MILESTONE FINAL] ОШИБКА: {e}", exc_info=True)
                         finally:
                             self.articles = original_articles
         
@@ -233,20 +192,6 @@ class RBScraper:
     
     def scrape_all(self, max_pages_per_section: int = 20, pages_config: dict = None, 
                    save_milestones: bool = True, milestone_interval: int = None) -> List[Dict]:
-        """
-        Скрапинг всех разделов сайта
-        
-        Args:
-            max_pages_per_section: Максимальное количество страниц на раздел (по умолчанию)
-            pages_config: Словарь с настройками страниц для каждого раздела
-                         Например: {'news': 200, 'stories': 200, 'opinions': 50}
-                         Если не указано, используется max_pages_per_section для всех
-            save_milestones: Сохранять ли промежуточные результаты после каждого раздела
-            milestone_interval: Сохранять каждые N статей (если None, сохраняется после каждого раздела)
-            
-        Returns:
-            Список всех статей
-        """
         all_articles = []
         self.articles = []  # Сбрасываем для накопления
         
@@ -259,7 +204,7 @@ class RBScraper:
                 logger.info(f"Скрапинг раздела {section} с максимумом {max_pages} страниц")
                 
                 # Передаем milestone_interval и текущее количество статей в scrape_section
-                # ВАЖНО: передаем все накопленные статьи через self.articles для правильного сохранения
+                # передаем все накопленные статьи через self.articles для правильного сохранения
                 self.articles = all_articles  # Обновляем перед началом раздела
                 logger.info(f"Передаю в scrape_section: milestone_interval={milestone_interval}, total_before_section={len(all_articles)}")
                 articles = self.scrape_section(
@@ -279,7 +224,6 @@ class RBScraper:
         
         self.articles = all_articles
         
-        # Финальное сохранение по интервалу перед завершением
         if milestone_interval and len(all_articles) >= milestone_interval:
             self.save_to_json('rb_articles_milestone.json')
             self.save_to_csv('rb_articles_milestone.csv')
